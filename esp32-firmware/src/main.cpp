@@ -14,10 +14,12 @@ struct WiFiCredentials {
   const char* password;
 };
 
-// List of known WiFi networks
+// List of known WiFi networks. Uncomment SSID3 and SSID4 if you need more networks.
 WiFiCredentials knownNetworks[] = {
-  { "Coffee", "PASSWORD" },
-  { "ThePoopBandits", "PASSWORD" }
+  { "SSID1", "PASSWORD" }, // WiFi credentials go here
+  { "SSID2", "PASSWORD" } // WiFi credentials go here
+//,{ "SSID3", "PASSWORD"}
+//,{"SSID4", "PASSWORD"}  
 };
 
 const int numNetworks = sizeof(knownNetworks) / sizeof(knownNetworks[0]);
@@ -66,7 +68,7 @@ void connectWiFi() {
 
 int readMoisturePercent() {
   int rawVal = analogRead(MOISTURE_PIN);
-  int moisturePercent = map(rawVal, 1960, 3100, 0, 100);
+  int moisturePercent = map(rawVal, 1960, 3100, 0, 100); // These values are calibrated to my VH400 moisture sensor, you may need to change these to suit your sensor.
   return constrain(moisturePercent, 0, 100);
 }
 
@@ -97,11 +99,16 @@ void loop() {
 
   // Determine server URL based on WiFi SSID
   String serverURL;
-  if (WiFi.SSID() == "Coffee") {
-    serverURL = "http://10.0.0.0:8000/api/sensor";  // RPI IP address
-  } else if (WiFi.SSID() == "ThePoopBandits") {
-    serverURL = "http://192.168.0.0:8000/api/sensor";
-  } else {
+  if (WiFi.SSID() == "SSID1") {
+    serverURL = "http://<IP_ADDRESS>:8000/api/sensor";  // EDIT THIS IP ADDRESS
+  } else if (WiFi.SSID() == "SSID2") {
+    serverURL = "http://<IP_ADDRESS>:8000/api/sensor"; // EDIT THIS IP ADDRESS
+    // else if (WiFi.SSID() == "SSID3") {           // UNCOMMENT THESE IF USING 3+ SSIDs
+    // serverURL = "http://<IP_ADDRESS>:8000/api/sensor"
+    // else if (WiFi.SSID() == "SSID4") {
+    // serverURL = "http://<IP_ADDRESS>:8000/api/sensor"
+    }
+    else {
     Serial.println("Unknown network — no server URL set!");
     return;
   }
