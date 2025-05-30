@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sensor Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Font + Chart.js -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        
+        .summary-cards {
+            display: flex;
+            justify-content: space-around;
+            margin: 0.6rem auto;
+            width: 90%;
+            max-width: 1000px;
+            flex-wrap: wrap;
+        }
+
+        .summary-card {
+            background-color: #2e2e2e;
+            color: #fff;
+            padding: 0.6rem 1.2rem;
+            margin: 0.5rem;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 500;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(34, 34, 34, 0.821);
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #121212;
+            color: #f1f1f1;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            padding: 2rem;
+            font-size: 1.8rem;
+            font-weight: 600;
+            text-align: center;
+            background: linear-gradient(90deg, #28bb0e, #1e8b0e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .card {
+            background-color: #1e1e1e;
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            padding: 2rem;
+            margin: 1rem;
+            width: 90%;
+            max-width: 1000px;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        .footer {
+            margin-top: 2rem;
+            font-size: 0.75rem;
+            color: #666;
+            text-align: right;
+            width: 90%;
+            max-width: 1000px;
+            padding-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <header>Garden Sensor Dashboard</header>
+
+    <div class="summary-cards">
+        <div class="summary-card" id="avg-temp">Avg Temp: --</div>
+        <div class="summary-card" id="avg-humidity">Avg Humidity: --</div>
+        <div class="summary-card" id="avg-lux">Avg Lux: --</div>
+        <div class="summary-card" id="avg-moisture">Avg Moisture: --</div>
+      </div>
+      
+    <div class="card">
+        <canvas id="sensorChart"></canvas>
+    </div>
+
+    <div class="footer">
+        &copy; {{ year }} TechTrev | ESP32 + FastAPI + JSON
+    </div>
+
+    <script>
+        fetch("/api/history")
+            .then(response => response.json())
+            .then(data => {
+                const labels = data.map(entry => entry.timestamp);
+                const tempData = data.map(entry => entry.temp_f);
+                const humidityData = data.map(entry => entry.humidity);
+                const luxData = data.map(entry => entry.lux);
+                const moistData = data.map(entry => entry.moisture);
+        function calculateAverage(arr) {
+            if (!arr.length) return "--";
+            const sum = arr.reduce((a, b) => a + b, 0);
+            return (sum / arr.length).toFixed(2);
+        }
+
+        const avgTemp = calculateAverage(tempData);
+        const avgHumidity = calculateAverage(humidityData);
+        const avgLux = calculateAverage(luxData);
+        const avgMoist = calculateAverage(moistData);
+
+        document.getElementById("avg-temp").innerText = `🌡 Avg Temp: ${avgTemp}°F`;
+        document.getElementById("avg-humidity").innerText = `💧 Avg Humidity: ${avgHumidity}%`;
+        document.getElementById("avg-lux").innerText = `💡 Avg Lux: ${avgLux}`;
+        document.getElementById("avg-moisture").innerText = `Avg Moisture: ${avgMoist}%`;
+
+
+                const ctx = document.getElementById('sensorChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Temp (F)',
+                                data: tempData,
+                                borderColor: '#ff0384',
+                                fill: false
+                                
+                            },
+                            {
+                                label: 'Humidity (%)',
+                                data: humidityData,
+                                borderColor: '#77f4eb',
+                                fill: false
+                            },
+                            {
+                                label: 'Lux',
+                                data: luxData,
+                                borderColor: '#ffcd56',
+                                fill: false
+                            },
+                            {
+                                label: 'Moisture (%)',
+                                data: moistData,
+                                borderColor: '#36a2eb',
+                                fill: false
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                ticks: { color: '#ccc' }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: { color: '#ccc' }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: { 
+                                    color: '#ddd', 
+                                    font: {
+                                        size: 13
+                                    }
+                            }
+                            }
+                        }
+                    }
+                });
+            });
+    </script>
+</body>
+</html>
