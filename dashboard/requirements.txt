@@ -1,0 +1,8 @@
+# Flask stack
+flask
+pandas
+
+# FastAPI stack
+fastapi
+uvicorn
+jinja2

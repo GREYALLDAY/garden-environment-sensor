@@ -3,12 +3,16 @@ from datetime import datetime
 import os
 import csv
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    template_folder="../templates",
+    static_folder="../static"
+    )
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
-# In-memory cache of last reading
+# In-memory cache of last reading, set logfile location
 latest_data = None
-log_file = "sensor_log.csv"
+log_file = os.path.join(os.path.dirname(__file__), "sensor_log.csv")
 
 # Route: HTML dashboard
 @app.route("/dashboard")
@@ -16,17 +20,17 @@ def dashboard():
     current_year = datetime.now().year
     return render_template("dashboard.html", year=current_year)
 
-# Route: API status
+# GET API status
 @app.route("/api/status", methods=["GET"])
 def status():
     return jsonify({"message": "Flask server is working!"})
 
-# Route: Get latest sensor data
+# GET latest sensor data
 @app.route("/api/sensor", methods=["GET"])
 def get_sensor_data():
     return jsonify(latest_data)
 
-# Route: Post sensor data
+# POST sensor data
 @app.route("/api/sensor", methods=["POST"])
 def post_sensor_data():
     global latest_data
@@ -41,8 +45,8 @@ def post_sensor_data():
             "moisture": float(data["moisture"])
         }
 
-        file_exists = os.path.isfile("sensor_log.csv")
-        with open("sensor_log.csv", "a", newline="") as f:
+        file_exists = os.path.isfile(log_file)
+        with open(log_file, "a", newline="") as f:
             writer = csv.writer(f)
             if not file_exists:
                 writer.writerow(["timestamp", "temp_f", "humidity", "lux", "moisture"])
@@ -59,12 +63,12 @@ def post_sensor_data():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-# Route: Get historical data
+# GET historical data
 @app.route("/api/history", methods=["GET"])
 def get_history():
     data = []
     try:
-        with open("sensor_log.csv", newline="") as f:
+        with open(log_file, newline="") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 try:

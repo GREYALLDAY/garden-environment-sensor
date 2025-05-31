@@ -2,6 +2,7 @@
 
 An ESP32-based sensor system to remotely monitor temperature, humidity, light levels, and soil moisture in your garden or greenhouse.
 
+
 ---
 
 ## Features
@@ -26,11 +27,13 @@ An ESP32-based sensor system to remotely monitor temperature, humidity, light le
 - Easily configurable for multiple locations
 
 ### MQTT / Home Assistant Integration
-- Coming soon
+- Coming soon!!
 
 ---
 
 ## Installation & Setup
+
+This guide is assuming you have basic coding/folder structure/terminal knowledge, are familiar with VScode, and know how to wire I2C components to microcontrollers. This is not a full tutorial designed for beginners, however if you have any questions at all please don't hesitate to reach out, and I'll do my best to help you get up and running.
 
 ### Requirements
 
@@ -41,7 +44,7 @@ An ESP32-based sensor system to remotely monitor temperature, humidity, light le
 #### Sensors:
 - HDC1080 – Temperature & Humidity  
 - BH1750 – Light sensor  
-- VH400 or analog moisture sensor – Soil Moisture  
+- VH400 or any other analog moisture sensor – Soil Moisture  
 
 ---
 
@@ -127,6 +130,47 @@ Replace `<IP_ADDRESS>` with the IP of the device hosting the server.
 - [ ] Home Assistant discovery support
 - [ ] Offline SD card logging
 - [ ] OTA updates
+
+---
+
+## Customizing the Dashboard UI
+
+The web interface is built with simple HTML, CSS, and [Chart.js](https://www.chartjs.org/). You'll find these files in the appropriate server folder:
+
+```
+dashboard/
+├── flask-dashboard/
+│   ├── templates/
+│   │   └── dashboard.html   ← Main HTML template
+│   └── static/
+│       └── style.css        ← Basic CSS styling
+│       └── chart.min.js     ← Chart.js library
+```
+
+To modify the UI:
+- **Edit `dashboard.html`** to change layout, add labels, or display more data.
+- **Update `style.css`** to customize colors, fonts, spacing, etc.
+- **Replace or extend `chart.min.js`** logic in the script section to add more chart types or interactions.
+
+Feel free to rework the template to match your branding or expand it into a full progressive web app (PWA) down the line.
+
+---
+
+## Roadmap
+
+- [x] Multi-network support
+- [x] Real-time and historical dashboard
+- [x] Chart.js integration for historical graphs
+- [x] Simple HTML/CSS dashboard layout
+- [ ] MQTT integration
+- [ ] Home Assistant discovery support
+- [ ] Offline SD card logging
+- [ ] OTA updates
+- [ ] Add theme toggle (dark/light mode)
+- [ ] Make dashboard mobile responsive
+- [ ] Add real-time chart updates without page refresh
+- [ ] Switch to Vue/React frontend (maybe)
+- [ ] Create separate admin/config interface
 
 ---
 
