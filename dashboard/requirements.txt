@@ -1,6 +1,8 @@
 # Flask stack
 Flask==3.0.2
 Jinja2==3.1.6
+paho-mqtt==1.6.1
+
 
 # FastAPI stack
 fastapi==0.115.12

@@ -1,13 +1,27 @@
+import paho.mqtt.client as mqtt
 from flask import Flask, jsonify, request, render_template
 from datetime import datetime
 import os
 import csv
+import json
+import atexit
 
-app = Flask(
-    __name__,
-    template_folder="../templates",
-    static_folder="../static"
-    )
+client = mqtt.Client(protocol=mqtt.MQTTv311)
+client.connect("localhost", 1883, 60) # change to your broker IP if needed
+client.loop_start()
+
+def publish_mqtt(data):
+    try:
+        client.publish("garden/sensors", json.dumps(data), retain=True)
+    except Exception as e:
+        print("MQTT publish error", e)
+
+@atexit.register
+def cleanup():
+    client.loop_stop()
+    client.disconnect()
+
+app = Flask(__name__, template_folder="../templates", static_folder="../static")
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 # In-memory cache of last reading, set logfile location
@@ -28,15 +42,18 @@ def status():
 # GET latest sensor data
 @app.route("/api/sensor", methods=["GET"])
 def get_sensor_data():
+    if latest_data is None:
+        return jsonify({"message": "No data received yet"}), 204
     return jsonify(latest_data)
-
+    
 # POST sensor data
 @app.route("/api/sensor", methods=["POST"])
 def post_sensor_data():
     global latest_data
     data = request.get_json()
-
-    # Validate and store
+    if not data:
+            return jsonify({"error": "Invalid or missing JSON payload"}), 400
+# Validate and store data
     try:
         latest_data = {
             "temp_f": float(data["temp_f"]),
@@ -44,13 +61,14 @@ def post_sensor_data():
             "lux": float(data["lux"]),
             "moisture": float(data["moisture"])
         }
-
+        publish_mqtt(latest_data)
+        print("Published to MQTT:", json.dumps(latest_data))
         file_exists = os.path.isfile(log_file)
         with open(log_file, "a", newline="") as f:
             writer = csv.writer(f)
             if not file_exists:
                 writer.writerow(["timestamp", "temp_f", "humidity", "lux", "moisture"])
-            timestamp = datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
+            timestamp = datetime.now().isoformat()
             writer.writerow([
                 timestamp,
                 round(latest_data["temp_f"], 2),
@@ -59,8 +77,8 @@ def post_sensor_data():
                 round(latest_data["moisture"], 1)
             ])
         return jsonify({"status": "ok", "received": latest_data}), 201
-
     except Exception as e:
+        print("Error during POST handling", e)
         return jsonify({"error": str(e)}), 400
 
 # GET historical data
