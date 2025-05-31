@@ -14,8 +14,14 @@ An ESP32-based sensor system to remotely monitor temperature, humidity, light le
 
 ### Wireless Monitoring via Web Dashboard
 - Flask or FastAPI backend
-- Displays real-time sensor data and historical charts using Chart.js
+- Displays real-time sensor data and historical charts
 - Supports trend tracking, average calculations, and more
+
+### Frontend
+- Dashboard built using Jinja2 templating
+- Charts powered by [Chart.js](https://www.chartjs.org/)
+- Customizable with basic HTML + CSS in `/templates/dashboard.html` and `/static/style.css`
+
 
 ### Live or Periodic Updates
 - Real-time updates via HTTP POST

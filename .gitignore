@@ -13,3 +13,6 @@ esp32-firmware/.pio/
 #MacOS
 .DS_STORE
 
+# Others
+sensor_log.csv
+.idea/
