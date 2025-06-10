@@ -11,7 +11,7 @@ An ESP32-based sensor system to remotely monitor temperature, humidity, light le
 ### Lightweight API
 - `POST /api/sensor` — accepts JSON sensor payloads  
 - `GET /api/status` — returns basic system status  
-- `GET /api/history` — returns historical data from `sensorlog.csv`
+- `GET /api/history` — returns historical data from `raw_sensorlog.csv`
 
 ### OTA Update Support
 - Wirelessly update the firmware using Arduino IDE (PlatformIO support in progress)
