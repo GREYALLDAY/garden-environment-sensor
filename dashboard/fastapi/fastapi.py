@@ -1,9 +1,9 @@
 from datetime import datetime
-from fastapi import FastAPI, Request  # type: ignore
-from fastapi.responses import HTMLResponse  # type: ignore
-from fastapi.staticfiles import StaticFiles  # type: ignore
-from fastapi.templating import Jinja2Templates  # type: ignore
-from pydantic import BaseModel  # type: ignore
+from fastapi import FastAPI, Request  
+from fastapi.responses import HTMLResponse  
+from fastapi.staticfiles import StaticFiles  
+from fastapi.templating import Jinja2Templates  
+from pydantic import BaseModel
 from pathlib import Path
 import csv
 import os

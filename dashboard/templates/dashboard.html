@@ -93,14 +93,14 @@
     </div>
 
     <div class="footer">
-        &copy; {{ year }} TechTrev | ESP32 + FastAPI + JSON
+        &copy; {{ year }} TechTrev | ESP32 + Flask/Gunicorn + FastAPI + MQTT + JSON
     </div>
 
     <script>
         fetch("/api/history")
             .then(response => response.json())
             .then(data => {
-                const labels = data.map(entry => entry.timestamp);
+                const labels = data.map(entry => entry.display_time);
                 const tempData = data.map(entry => entry.temp_f);
                 const humidityData = data.map(entry => entry.humidity);
                 const luxData = data.map(entry => entry.lux);
@@ -132,26 +132,30 @@
                                 label: 'Temp (F)',
                                 data: tempData,
                                 borderColor: '#ff0384',
-                                fill: false
+                                fill: false,
+                                yAxisID: 'y1'
                                 
                             },
                             {
                                 label: 'Humidity (%)',
                                 data: humidityData,
                                 borderColor: '#77f4eb',
-                                fill: false
+                                fill: false,
+                                yAxisID: 'y1'
                             },
                             {
                                 label: 'Lux',
                                 data: luxData,
                                 borderColor: '#ffcd56',
-                                fill: false
+                                fill: false,
+                                yAxisID: 'y2'
                             },
                             {
                                 label: 'Moisture (%)',
                                 data: moistData,
                                 borderColor: '#36a2eb',
-                                fill: false
+                                fill: false,
+                                yAxisID: 'y1'
                             }
                         ]
                     },
@@ -162,9 +166,17 @@
                             x: {
                                 ticks: { color: '#ccc' }
                             },
-                            y: {
+                            y1: {
                                 beginAtZero: true,
-                                ticks: { color: '#ccc' }
+                                ticks: { color: '#ccc' },
+                                title: { display: true, text: 'Temp / Humidity / Moisture', color: '#ccc' }
+                            },
+                            y2: {
+                                beginAtZero: true,
+                                position: 'right',
+                                ticks: { color: '#ccc' },
+                                grid: { drawOnChartArea: false },
+                                title: { display: true, text: 'Lux', color: '#ccc' }
                             }
                         },
                         plugins: {

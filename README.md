@@ -4,36 +4,43 @@ An ESP32-based sensor system to remotely monitor temperature, humidity, light le
 
 
 ---
+> ⚠️ This project is intended for local network use. If exposing it to the public internet, consider adding authentication and HTTPS.
 
 ## Features
 
 ### Lightweight API
 - `POST /api/sensor` — accepts JSON sensor payloads  
 - `GET /api/status` — returns basic system status  
-- `GET /api/history` — returns historical data from `sensor_log.csv`
+- `GET /api/history` — returns historical data from `sensorlog.csv`
+
+### OTA Update Support
+- Wirelessly update the firmware using Arduino IDE (PlatformIO support in progress)
+- It shows up as a wireless device, just select it and upload your changes
 
 ### Wireless Monitoring via Web Dashboard
-- Flask or FastAPI backend
+- Flask/Gunicorn or FastAPI backend
 - Displays real-time sensor data and historical charts
 - Supports trend tracking, average calculations, and more
 
 ### Frontend
-- Dashboard built using Jinja2 templating
-- Charts powered by [Chart.js](https://www.chartjs.org/)
+- Dashboard built using Jinja2, run with Gunicorn
+- Displays a clean, interactive chart powered by [Chart.js](https://www.chartjs.org/)
+- Dual Y-axis chart
 - Customizable with basic HTML + CSS in `/templates/dashboard.html` and `/static/style.css`
 
-
 ### Live or Periodic Updates
-- Real-time updates via HTTP POST
-- Periodic logging to `sensor_log.csv`
-- All data is sanitized and validated before storage
+- Real-time updates via HTTP POST or MQTT subscription
+- Periodic logging to `raw_sensorlog.csv`
+- Utility script `data-cleaner.py` included to clean and validate data, saved as `cleaned_sensorlog.csv`
 
 ### Multi-Network Support
 - Automatically connects to known Wi-Fi networks
 - Easily configurable for multiple locations
 
 ### MQTT / Home Assistant Integration
-- Coming soon!!
+- `flask-mqtt` used to send sensor information to `garden/sensors`
+- Easily integrate with Home Assistant to create graphs using `mini-graph-card`
+ 
 
 ---
 
@@ -48,9 +55,9 @@ This guide is assuming you have basic coding/folder structure/terminal knowledge
 - VSCode with PlatformIO extension installed  
 
 #### Sensors:
-- HDC1080 – Temperature & Humidity  
-- BH1750 – Light sensor  
-- VH400 or any other analog moisture sensor – Soil Moisture  
+- HDC1080 – I2C, Temperature & Humidity (Adafruit)
+- OPT3001 – I2C, Precision light sensor (TI)  
+- VH400 - Analog soil moisture sensor (Vegetronix) 
 
 ---
 
@@ -58,8 +65,7 @@ This guide is assuming you have basic coding/folder structure/terminal knowledge
 
 1. Open VSCode and install the **PlatformIO** extension if not already installed.
 2. Navigate to `esp32-firmware/src/main.cpp` and update the Wi-Fi credentials:
-   - Edit lines `19`, `20`, `103`, and `105` for two networks.
-   - To support additional networks, uncomment and update lines `21`, `22`, `106–109`.
+   - Edit the Wi-Fi SSID and password definitions at the top and in the fallback section.
 
 3. Plug in your ESP32 board and confirm the COM port in PlatformIO.
 
@@ -95,13 +101,19 @@ If you see unreadable characters, confirm the baud rate or press the reset butto
 
 Navigate to the `/dashboard` directory. You'll find two folders:
 
-- `/flask-dashboard` — lightweight and ideal for devices like the RPi Zero W  
+- `/flask` — lightweight and ideal for devices like the RPi Zero W  
 - `/fastapi` — async, scalable, and better for higher performance systems
 
-### Flask
+### Flask with Gunicorn (Basic launch)
 ```bash
-cd dashboard/flask-dashboard
-python flaskserver.py
+cd garden-dev/dashboard/flask
+gunicorn -b 0.0.0.0:8000 dashboard:app
+```
+ > Note: `dashboard:app` tells Gunicorn to look for the Flask app object named `app` in the `dashboard.py` file.
+### Flask with Gunicorn (Using gunicorn.conf.py)
+```bash
+cd garden-dev/dashboard/flask
+gunicorn -c gunicorn.conf.py dashboard:app
 ```
 
 ### FastAPI
@@ -128,29 +140,18 @@ Replace `<IP_ADDRESS>` with the IP of the device hosting the server.
 
 ---
 
-## Roadmap
-
-- [x] Multi-network support
-- [x] Real-time and historical dashboard
-- [ ] MQTT integration
-- [ ] Home Assistant discovery support
-- [ ] Offline SD card logging
-- [ ] OTA updates
-
----
-
 ## Customizing the Dashboard UI
 
-The web interface is built with simple HTML, CSS, and [Chart.js](https://www.chartjs.org/). You'll find these files in the appropriate server folder:
+The web interface is built with simple HTML, CSS, and Chart.js. You'll find these files in the appropriate server folder:
 
 ```
 dashboard/
 ├── flask-dashboard/
 │   ├── templates/
-│   │   └── dashboard.html   ← Main HTML template
+│   │   └── dashboard.html   - Main HTML template
 │   └── static/
-│       └── style.css        ← Basic CSS styling
-│       └── chart.min.js     ← Chart.js library
+│       └── style.css        - CSS styling
+│       └── chart.min.js     - Chart.js library
 ```
 
 To modify the UI:
@@ -159,24 +160,6 @@ To modify the UI:
 - **Replace or extend `chart.min.js`** logic in the script section to add more chart types or interactions.
 
 Feel free to rework the template to match your branding or expand it into a full progressive web app (PWA) down the line.
-
----
-
-## Roadmap
-
-- [x] Multi-network support
-- [x] Real-time and historical dashboard
-- [x] Chart.js integration for historical graphs
-- [x] Simple HTML/CSS dashboard layout
-- [ ] MQTT integration
-- [ ] Home Assistant discovery support
-- [ ] Offline SD card logging
-- [ ] OTA updates
-- [ ] Add theme toggle (dark/light mode)
-- [ ] Make dashboard mobile responsive
-- [ ] Add real-time chart updates without page refresh
-- [ ] Switch to Vue/React frontend (maybe)
-- [ ] Create separate admin/config interface
 
 ---
 

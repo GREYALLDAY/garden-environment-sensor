@@ -14,5 +14,6 @@ esp32-firmware/.pio/
 .DS_STORE
 
 # Others
-sensor_log.csv
+*.csv
 .idea/
+dashboard/flask/raw_sensorlog.csv
