@@ -7,29 +7,89 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### To be Added
-- [TESTING] deep sleep mode for systems running on smaller batteries
-- ntfy.sh notification support
-- `/api/config` endpoint to modify/retrieve ESP32 configuration settings
-- allow POST based updates such as changes to:
-  - wi-fi credentials
-  - mqtt topic names
-  - sensor polling rate
-- Refined dashboard UI with improved mobile support
-- Offline SD card logging support
-- Update fastapi.py with changes made to dashboard.py for better compatiability
-- BMP280 barometric sensor support
-- `/api/export` endpoint to download current log
+- Planned: `/api/export` endpoint to download current log (experimental)
+- Planned: ntfy.sh notification logic (experimental)
+- Planned: Offline SD card logging support (experimental)
+- Planned: Battery voltage monitor
+- Planned: Machine Learning/Inference support (experimental)
+- Testing: BMP280 barometric sensor support (testing integration)
+- Testing: Sensor data smoothing via sample averaging per wake cycle (testing integration)
+
 
 ### To be Changed
-- Improve error logging/handling, add more edge cases
+
 - Custom thresholds for light/moisture/humidity/pressure
-- Push MQTT/ntfy.sh alert when threshold is exceeded
 - Historical zoom + pan on graph
 - add uptime counter to `/api/status`
 
 ### To be Fixed
-- UTC to CST time conversion and logging still messy
-- Add support for other time zones, ability switch between time zones
+- Dashboard date layout is currently too crowded after collecting many data points, working on a more elegant fix
+
+## [1.1.2] - 2025-06-25
+Major firmware overhaul with FreeRTOS task-based design, deep sleep integration, OTA improvements, and memory leak fixes.
+
+### Added
+- Added deep sleep support using `esp_deep_sleep()`
+  - Drastically increases battery life, wakes only to take sensor readings and send to server.
+- Refactored codebase for FreeRTOS support, no more loops, only tasks!
+  - `sensorTask` -> takes sensor readings, sends POST, then calls goToSleep()
+  - `initSensors` -> initializes and enables sensors
+  - `goToSleep()` -> function to handle resetting wdt, entering deep sleep
+  - `wifiMonitorTask` -> Checks WiFi connection, sends reconnect request when disconnected
+  - `OTATask` -> Checks for OTA requests, pauses sleep if OTA request received 
+  - `connectConfig()` -> parses config.json for credentials, attempts to connect to network, if fails     will fallback to hardcoded network.
+- Added VEML7700 light sensor support
+- Added ESP32-S3 support
+### Changed
+- Updated platformio.ini with proper build flags for ESP32 Dev Board and ESP32-S3
+- Fixed HTTP memory leak caused by missing `http.end()` after POST requests
+- Fixed memory leak leak from hanging `for` loop in `sensorTask`
+- Improved WiFi fallback/reconnection logic
+  - Multi-network fallback support
+- Improved code readability
+  - Added more [DEBUG] lines for additional information such as Free Heap
+- Improved OTA logic, put into its own function for easier reuse
+  - Credentials now entered once at the top of the codeblock, 
+  - Improved dynamic network handling
+- Upgraded from delay() to non blocking delays
+- `esp_task_wdt` watchdog timer for more robust handling of errors and hangs
+### Removed
+- Removed `loop ()` logic, everything now runs in FreeRTOS Tasks, this increases performance by now running tasks in parallel, utilizing both cores
+- Removed and replaced much of the `setup()` logic with predefined functions for better modularity
+
+### [Changes] (dashboard.py)
+
+#### Added
+
+- **API Enhancements**
+  - `POST /api/sensor` now logs to:
+    - `logs/raw_sensorlog.csv` — general sensor data
+    - `logs/veml-debug.csv` — VEML7700-specific debug log (ALS, WHITE, integration time, gain)
+  - `GET /api/sensor` returns the most recent reading (`latest_data`)
+  - `GET /api/history` now returns cleaned, timestamp-formatted historical data
+
+- **MQTT Integration**
+  - Sensor payloads are published to `garden/sensors` topic
+  - MQTT messages are JSON encoded and sent with `retain=True`
+
+- **Configuration API**
+  - `GET /api/config` returns stored config from `config.json`
+  - `POST /api/config` allows config updates with basic type validation and value checks
+
+#### Improved
+
+- **Logging System**
+  - Rotating file log at `logs/sensor-log.log` (max size 1MB, 5 backups)
+  - Console logs with standardized timestamp and level formatting
+
+- **Dashboard Integration**
+  - Template and static paths are now handled cleanly from `dashboard.py`
+
+- **API Robustness**
+  - All APIs now validate JSON payloads and return helpful error messages
+  - Auto-creates `logs/` directory if missing to avoid runtime errors
+  - Timestamp handling standardized (UTC ISO 8601 format)
+
 
 ## [1.1.1] - 2025-06-10
 ### Added

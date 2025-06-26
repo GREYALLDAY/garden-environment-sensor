@@ -2,13 +2,15 @@
 __pycache__/
 *.pyc
 *.env
+/venv
 
 # VSCode
 .vscode/
 *.code-workspace
 
 # PlatformIO
-esp32-firmware/.pio/
+*.ini
+*.pio
 
 #MacOS
 .DS_STORE
@@ -17,3 +19,4 @@ esp32-firmware/.pio/
 *.csv
 .idea/
 dashboard/flask/raw_sensorlog.csv
+*.log

@@ -1,0 +1,14 @@
+{
+  "wifi": {
+    "ssid": "<SSID>",
+    "password": "<PASSWORD>"
+  },
+  "mqtt": {
+    "broker": "<BROKER_IP>",
+    "port": 1883
+  },
+  "sensors" : {
+    "poll_interval": 10000
+  }
+  
+}

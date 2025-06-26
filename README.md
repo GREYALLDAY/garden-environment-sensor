@@ -6,7 +6,24 @@ An ESP32-based sensor system to remotely monitor temperature, humidity, light le
 ---
 > ⚠️ This project is intended for local network use. If exposing it to the public internet, consider adding authentication and HTTPS.
 
+
+ ## What's New in v1.1.2
+- FreeRTOS conversion: firmware now uses parallel tasks instead of loop()
+- Deep Sleep support: drastically improved battery life
+- ESP32-S3 support
+- VEML7700 light sensor added
+- Better OTA logic and memory leak fixes
+
+
 ## Features
+
+### FreeRTOS + Deep Sleep Support
+- Fully refactored codebase to use FreeRTOS tasks
+- ESP now wakes, reads sensors, sends data, and returns to deep sleep
+- Major power savings for solar or battery powered setups
+
+### Multi Board Support
+- Now supports ESP32-S3!
 
 ### Lightweight API
 - `POST /api/sensor` — accepts JSON sensor payloads  
@@ -14,8 +31,8 @@ An ESP32-based sensor system to remotely monitor temperature, humidity, light le
 - `GET /api/history` — returns historical data from `raw_sensorlog.csv`
 
 ### OTA Update Support
-- Wirelessly update the firmware using Arduino IDE (PlatformIO support in progress)
-- It shows up as a wireless device, just select it and upload your changes
+- Wirelessly update the firmware using PlatformIO or Arduino IDE
+- Shows up as a wireless device, just select the board from the top dropdown and upload your changes
 
 ### Wireless Monitoring via Web Dashboard
 - Flask/Gunicorn or FastAPI backend
@@ -50,13 +67,14 @@ This guide is assuming you have basic coding/folder structure/terminal knowledge
 
 ### Requirements
 
-- ESP32 Dev Board  
+- ESP32 Dev Board (S3 now supported!)
 - Raspberry Pi Zero W (or any device to run Flask/FastAPI server)  
 - VSCode with PlatformIO extension installed  
 
-#### Sensors:
+#### Supported Sensors:
 - HDC1080 – I2C, Temperature & Humidity (Adafruit)
-- OPT3001 – I2C, Precision light sensor (TI)  
+- OPT3001 – I2C, Precision light sensor (TI)
+- VEML7700 - I2C, Precision light sensor (Vishay)  
 - VH400 - Analog soil moisture sensor (Vegetronix) 
 
 ---
@@ -110,11 +128,39 @@ cd garden-dev/dashboard/flask
 gunicorn -b 0.0.0.0:8000 dashboard:app
 ```
  > Note: `dashboard:app` tells Gunicorn to look for the Flask app object named `app` in the `dashboard.py` file.
+
 ### Flask with Gunicorn (Using gunicorn.conf.py)
 ```bash
 cd garden-dev/dashboard/flask
 gunicorn -c gunicorn.conf.py dashboard:app
 ```
+### Configuring gunicorn.conf.py
+In order to use the configuration file, you must first create a `gunicorn.conf.py` file in the same directory as`dashboard.py`. I've included a configuration file that will work with this set up out-of-the-box. Also I have included the full example file from Benoitc's [github repo](https://github.com/benoitc/gunicorn/blob/master/examples/example_config.py)
+```python
+# gunicorn.conf.py
+
+# Logging
+loglevel = 'debug'
+capture_output = True
+accesslog = 'logs/access.log'
+errorlog = 'logs/error.log'
+
+# Workers and performance
+workers = 2
+threads = 4
+worker_class = 'gthread'  # or 'uvicorn.workers.UvicornWorker' if using FastAPI
+
+# Binding
+bind = '0.0.0.0:8000'
+
+# Daemon (optional)
+# daemon = True
+```
+- This will add debug level logging, create an `access.log` and `error.log` and store them in the `/logs` directory under `/dashboard/flask`.
+- It also adds 2 workers and 4 threads to handle processes concurrently, as well as binds the webserver to 0.0.0.0 port 8000, so any IP address the hosting device uses will bind as the server IP, rather than hardcoding a server IP.
+- This can be further utilized if you set a static IP and hostname for your server in /etc/hosts, then you can simply type http://server.local:8000/dashboard rather than the device IP address.
+- There are additional options you can add, such as timeout, keep alive, hooks, add a SSL cert, etc. But for now this is plenty to get up and running.
+
 
 ### FastAPI
 ```bash
@@ -134,9 +180,10 @@ Replace `<IP_ADDRESS>` with the IP of the device hosting the server.
 
 ## Troubleshooting
 
-- Ensure both ESP32 and server device are on the same network.
+- Ensure both ESP32 and server device are on the same network/subnet
 - Restart the server if you modify Flask/FastAPI code.
 - Verify sensor wiring and I2C addresses if values are not appearing.
+- Press EN button on ESP to reboot after flashing or if not getting any readings after flashing.
 
 ---
 
@@ -146,12 +193,21 @@ The web interface is built with simple HTML, CSS, and Chart.js. You'll find thes
 
 ```
 dashboard/
-├── flask-dashboard/
+├── flask/
 │   ├── templates/
-│   │   └── dashboard.html   - Main HTML template
-│   └── static/
-│       └── style.css        - CSS styling
-│       └── chart.min.js     - Chart.js library
+│   │   └── dashboard.html       # Main HTML template
+│   ├── static/
+│   │   ├── style.css            # CSS styling
+│   │   └── chart.min.js         # Chart.js library
+│   ├── logs/
+│   │   ├── access.log           # Logs Flask access requests
+│   │   ├── error.log            # Logs Flask error messages
+│   │   ├── raw_sensorlog.csv    # Main sensor log, stores raw sensor data
+│   │   └── cleaned_sensorlog.csv# Cleaned and validated sensor data
+│   └── utils/
+│       └── data-cleaner.py      # Cleans raw CSV logs into standardized format
+
+  
 ```
 
 To modify the UI:
