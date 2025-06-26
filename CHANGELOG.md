@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### To be Fixed
 - Dashboard date layout is currently too crowded after collecting many data points, working on a more elegant fix
 
-## [1.1.2] - 2025-06-25
+## [1.2.0] - 2025-06-25
 Major firmware overhaul with FreeRTOS task-based design, deep sleep integration, OTA improvements, and memory leak fixes.
 
 ### Added
