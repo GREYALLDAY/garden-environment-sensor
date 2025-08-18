@@ -7,6 +7,7 @@ import json
 import logging
 import pandas as pd
 from logging.handlers import RotatingFileHandler
+import subprocess
 
 CONFIG_FILE = "config.json"
 LOG_DIR = "logs"
@@ -35,7 +36,7 @@ console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 console_handler.setFormatter(formatter)
 
-log_handler = RotatingFileHandler(os.path.join(LOG_DIR, 'sensor-log.log'), maxBytes=1_000_000, backupCount=5)
+log_handler = RotatingFileHandler(os.path.join(LOG_DIR, 'sensor-log.log'), maxBytes=5_000_000, backupCount=5)
 log_handler.setLevel(logging.INFO)
 log_handler.setFormatter(formatter)
 
@@ -62,6 +63,15 @@ app.config.update(
 )
 mqtt = Mqtt(app)
 
+# NFTY configuration
+def send_ntfy_message(topic, message, title="Garden Sensor-ntfy", priority="default"):
+    subprocess.run([
+        "ntfy", "publish", topic,
+        "--priority", priority,
+        "--title", title,
+        message
+    ])
+
 # Global state
 latest_data = None
 
@@ -72,7 +82,17 @@ def publish_mqtt(data):
     except Exception as e:
         print("Error publishing to MQTT:", e)
 
-# Routes
+
+def api_response(status="ok", message=None, data=None, http_status=200):
+    resp = {"status": status}
+    if message: resp["message"] = message
+    if data is not None: resp["data"] = data
+    return jsonify(resp), http_status
+# ---------------------------------------------------------------------------
+
+
+# ============= ROUTES =============
+
 @app.route("/dashboard")
 def dashboard():
     if not os.path.exists(RAW_LOG_FILE):
@@ -81,16 +101,40 @@ def dashboard():
     df["timestamp"] = pd.to_datetime(df["timestamp"])
     return render_template("dashboard.html", year=datetime.now().year)
 
+
+# [GET] /api/sensor  --------------------------------------------------------
+@app.route("/api/sensor", methods=["GET"])
+def get_sensor_data():
+    if latest_data is None:
+        return api_response("error", "No data received yet", http_status=200)
+
+    try:
+        dt = datetime.fromisoformat(latest_data["timestamp"].replace("Z", ""))
+        formatted = {
+            "timestamp": dt.isoformat(),
+            "display_time": dt.strftime("%-m/%-d/%y %I:%M %p"),
+            "temp_f": float(latest_data["temp_f"]),
+            "humidity": float(latest_data["humidity"]),
+            "lux": float(latest_data["lux"]),
+            "moisture": float(latest_data.get("moisture", 0))
+        }
+        return api_response(data=formatted) 
+    except (ValueError, KeyError) as e:
+        return api_response("error", str(e), http_status=500)
+# ---------------------------------------------------------------------------
+
+
+# [POST] /api/sensor  -------------------------------------------------------
 @app.route("/api/sensor", methods=["POST"])
 def post_sensor_data():
     global latest_data
     data = request.get_json()
     if not data:
-        return jsonify({"error": "Invalid or missing JSON payload"}), 400
+        return api_response("error", "Invalid or missing JSON payload", http_status=400)
 
-    required_keys = ["timestamp", "temp_f", "humidity", "lux", "moisture"]
-    if not all(k in data for k in required_keys):
-        return jsonify({"error": "Missing required headers!"}), 400
+    required = {"timestamp", "temp_f", "humidity", "lux", "moisture"}
+    if not required.issubset(data):
+        return api_response("error", "Missing required headers!", http_status=400)
 
     try:
         latest_data = {
@@ -98,12 +142,13 @@ def post_sensor_data():
             "temp_f": float(data["temp_f"]),
             "humidity": float(data["humidity"]),
             "lux": float(data["lux"]),
-            "moisture": float(data["moisture"])
+            "moisture": float(data["moisture"]),
         }
 
-        publish_mqtt(latest_data)
+        publish_mqtt(data)
         print("Published to MQTT:", json.dumps(latest_data))
-
+        
+        
         file_exists = os.path.isfile(RAW_LOG_FILE)
         write_header = not file_exists or os.stat(RAW_LOG_FILE).st_size == 0
 
@@ -140,21 +185,23 @@ def post_sensor_data():
         app.logger.info(f"Sensor POST received: {request.json}")
         print("Writing to log file.")
         print("[DEBUG] VEML data row: ", veml_data_row)
-        return jsonify({"status": "ok", "received": latest_data}), 201
+        return api_response(data={"received": latest_data}, http_status=201)
+        
     except Exception as e:
         app.logger.error(f"Error during POST: {e}")
-        return jsonify({"error": str(e)}), 500
+        return api_response("error", str(e), http_status=500)
+# ---------------------------------------------------------------------------
 
+
+# [GET|POST] /api/config  ---------------------------------------------------
 @app.route("/api/config", methods=["GET", "POST"])
 def config_handler():
     if request.method == "GET":
-        return jsonify(load_config())
-
+        return api_response(data=load_config())
     try:
-        new_config = request.get_json()
-        if not new_config:
-            return jsonify({"error": "No JSON Found"}), 400
-
+        new_cfg = request.get_json()
+        if not new_cfg:
+            return api_response("error", "No JSON Found", http_status=400)
         valid_schema = {
             "polling_rate": int,
             "ssid": str,
@@ -164,56 +211,52 @@ def config_handler():
         }
         validated = {}
         for key, expected_type in valid_schema.items():
-            if key in new_config:
-                value = new_config[key]
+            if key in new_cfg:
+                value = new_cfg[key]
                 if not isinstance(value, expected_type):
                     if key == "polling_rate" and not (1000 <= value <= 600000):
                         return jsonify({"error": "polling_rate must be between 1000 and 600000"})
                 validated[key] = value
-
         config = load_config()
         config.update(validated)
         save_config(config)
-        return jsonify({"status": "updated", "config": config})
+        return api_response("ok", data=config)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return api_response("error", str(e), http_status=500)
+# ---------------------------------------------------------------------------
 
+
+# /api/status stays simple
 @app.route("/api/status")
 def status():
-    return jsonify({"message": "API is working!"})
+    return api_response(message="API is running!")       # {"status":"ok","message":...}
 
-@app.route("/api/sensor", methods=["GET"])
-def get_sensor_data():
-    if latest_data is None:
-        return jsonify({"message": "No data received yet"}), 204
-    return jsonify(latest_data)
-
+# /api/history  -------------------------------------------------------------
 @app.route("/api/history")
 def get_history():
-    data = []
     try:
         with open(RAW_LOG_FILE, newline="") as f:
             reader = csv.DictReader(f)
+            data = []
             for row in reader:
                 try:
-                    timestamp = row["timestamp"].replace("Z", "")
-                    dt = datetime.fromisoformat(timestamp)
-                    display_time = dt.strftime("%-m/%-d/%y %I:%M %p")
+                    dt = datetime.fromisoformat(row["timestamp"].replace("Z", ""))
                     data.append({
                         "timestamp": dt.isoformat(),
-                        "display_time": display_time,
+                        "display_time": dt.strftime("%-m/%-d/%y %I:%M %p"),
                         "temp_f": float(row["temp_f"]),
                         "humidity": float(row["humidity"]),
                         "lux": float(row["lux"]),
-                        "moisture": float(row.get("moisture", 0))
+                        "moisture": float(row.get("moisture", 0)),
                     })
-                except (ValueError, KeyError) as e:
-                    print(f"Skipping row due to error: {e}, Row: {row}")
+                except (ValueError, KeyError):
                     continue
         data.sort(key=lambda x: x["timestamp"])
-        return jsonify(data)
+        return api_response(data=data)
     except FileNotFoundError:
-        return jsonify([])
+        return api_response("error", "History log not found", http_status=404)
+# ---------------------------------------------------------------------------
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

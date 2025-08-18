@@ -1,22 +1,86 @@
-# Python
+# ---- Python ----
 __pycache__/
-*.pyc
-*.env
-/venv
+*.py[cod]
+*$py.class
 
-# VSCode
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+ENV/
+*.env
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pyre/
+
+# ---- PlatformIO ----
+.pio/
+.pioenvs/
+.piolibdeps/
+.platformio/
+
+# ---- macOS ----
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# ---- Logs, Databases, Misc ----
+*.log
+*.db
+*.sqlite
+*.sqlite3
+*.csv
+
+# ---- IDEs & Editors ----
 .vscode/
+.idea/
 *.code-workspace
 
-# PlatformIO
-*.ini
-*.pio
+# ---- Secrets ----
+# Adjust as needed (you can create a template like secrets.template.h to commit)
+src/secrets.h
+*secrets*.*
 
-#MacOS
-.DS_STORE
+# ---- Backup / Temp ----
+*.bak
+*.tmp
+*.swp
+*.swo
+*.orig
 
-# Others
-*.csv
-.idea/
-dashboard/flask/raw_sensorlog.csv
-*.log
+esp32-firmware/src/main.cpp.back

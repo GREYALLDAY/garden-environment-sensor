@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <title>Sensor Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- Font + Chart.js -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
+
     <style>
-        
         .summary-cards {
             display: flex;
             justify-content: space-around;
@@ -30,7 +30,7 @@
             transform: scale(1.02);
             box-shadow: 0 0 15px rgba(34, 34, 34, 0.821);
         }
-        
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: #121212;
@@ -86,10 +86,16 @@
         <div class="summary-card" id="avg-humidity">Avg Humidity: --</div>
         <div class="summary-card" id="avg-lux">Avg Lux: --</div>
         <div class="summary-card" id="avg-moisture">Avg Moisture: --</div>
-      </div>
-      
+    </div>
+
     <div class="card">
         <canvas id="sensorChart"></canvas>
+    </div>
+    <div style="margin-top: 1rem;">
+        <button onclick="resetZoom()">Reset Zoom</button>
+        <button onclick="filterRange(1)">Last Hour</button>
+        <button onclick="filterRange(24)">Last 24h</button>
+        <button onclick="filterRange(168)">Last 7 Days</button>
     </div>
 
     <div class="footer">
@@ -100,33 +106,27 @@
         fetch("/api/history")
             .then(response => response.json())
             .then(data => {
-                const labels = data.map(entry => entry.display_time);
-                const tempData = data.map(entry => entry.temp_f);
-                const humidityData = data.map(entry => entry.humidity);
-                const luxData = data.map(entry => entry.lux);
-                const moistData = data.map(entry => entry.moisture);
-        function calculateAverage(arr) {
-            if (!arr.length) return "--";
-            const sum = arr.reduce((a, b) => a + b, 0);
-            return (sum / arr.length).toFixed(2);
-        }
+                const tempData = data.map(entry => ({ x: new Date(entry.timestamp), y: entry.temp_f }));
+                const humidityData = data.map(entry => ({ x: new Date(entry.timestamp), y: entry.humidity }));
+                const luxData = data.map(entry => ({ x: new Date(entry.timestamp), y: entry.lux }));
+                const moistData = data.map(entry => ({ x: new Date(entry.timestamp), y: entry.moisture }));
 
-        const avgTemp = calculateAverage(tempData);
-        const avgHumidity = calculateAverage(humidityData);
-        const avgLux = calculateAverage(luxData);
-        const avgMoist = calculateAverage(moistData);
+                function calculateAverage(arr) {
+                    if (!arr.length) return "--";
+                    const sum = arr.reduce((a, b) => a + b, 0);
+                    return (sum / arr.length).toFixed(2);
+                }
 
-        document.getElementById("avg-temp").innerText = `🌡 Avg Temp: ${avgTemp}°F`;
-        document.getElementById("avg-humidity").innerText = `💧 Avg Humidity: ${avgHumidity}%`;
-        document.getElementById("avg-lux").innerText = `💡 Avg Lux: ${avgLux}`;
-        document.getElementById("avg-moisture").innerText = `Avg Moisture: ${avgMoist}%`;
-
+                document.getElementById("avg-temp").innerText = `🌡 Avg Temp: ${calculateAverage(tempData.map(p => p.y))}°F`;
+                document.getElementById("avg-humidity").innerText = `💧 Avg Humidity: ${calculateAverage(humidityData.map(p => p.y))}%`;
+                document.getElementById("avg-lux").innerText = `💡 Avg Lux: ${calculateAverage(luxData.map(p => p.y))}`;
+                document.getElementById("avg-moisture").innerText = `Avg Moisture: ${calculateAverage(moistData.map(p => p.y))}%`;
 
                 const ctx = document.getElementById('sensorChart').getContext('2d');
-                new Chart(ctx, {
+
+                const chart = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: labels,
                         datasets: [
                             {
                                 label: 'Temp (F)',
@@ -134,7 +134,6 @@
                                 borderColor: '#ff0384',
                                 fill: false,
                                 yAxisID: 'y1'
-                                
                             },
                             {
                                 label: 'Humidity (%)',
@@ -164,7 +163,13 @@
                         maintainAspectRatio: false,
                         scales: {
                             x: {
-                                ticks: { color: '#ccc' }
+                                type: 'time',
+                                time: {
+                                    tooltipFormat: 'MMM d, h:mm a',
+                                    unit: 'hour'
+                                },
+                                ticks: { color: '#ccc' },
+                                title: { display: true, text: 'Time', color: '#ccc' }
                             },
                             y1: {
                                 beginAtZero: true,
@@ -181,16 +186,39 @@
                         },
                         plugins: {
                             legend: {
-                                labels: { 
-                                    color: '#ddd', 
-                                    font: {
-                                        size: 13
-                                    }
+                                labels: {
+                                    color: '#ddd',
+                                    font: { size: 13 }
+                                }
+                            },
+                            zoom: {
+                                pan: {
+                                    enabled: true,
+                                    mode: 'x',
+                                    modifierKey: 'ctrl'
+                                },
+                                zoom: {
+                                    wheel: { enabled: true },
+                                    pinch: { enabled: true },
+                                    mode: 'x'
+                                }
                             }
-                            }
+                        },
+                        interaction: {
+                            mode: 'nearest',
+                            intersect: false
                         }
                     }
                 });
+
+                window.resetZoom = () => chart.resetZoom();
+                window.filterRange = (hours) => {
+                    const now = new Date();
+                    const start = new Date(now.getTime() - hours * 60 * 60 * 1000);
+                    chart.options.scales.x.min = start;
+                    chart.options.scales.x.max = now;
+                    chart.update();
+                };
             });
     </script>
 </body>
