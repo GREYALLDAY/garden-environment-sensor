@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Garden Sensor Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Fonts and external libraries -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css" />
+  <!-- local vendor scripts -->
+  <script src="{{ url_for('static', filename='js/vendor/chart.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/vendor/chartjs-plugin-zoom.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/vendor/luxon.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/vendor/chartjs-adapter-luxon.min.js') }}"></script>
+
+  <!-- local dashboard.js -->
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
+  <!-- Local stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body>
+
+  <!-- Dashboard Header -->
+  <header class="animate__animated animate__fadeInDown">Garden Sensor Dashboard</header>
+
+  <!-- Summary Cards -->
+  <div class="summary-grid animate__animated animate__fadeInUp" id="cards"></div>
+
+  <!-- Main Chart -->
+  <div class="chart-wrap animate__animated animate__fadeInUp">
+    <canvas id="sensorChart"></canvas>
+  </div>
+
+  <!-- Time Range & Zoom Controls -->
+  <div class="chart-controls">
+    <button data-range="1h" aria-label="Show data for last hour">1H</button>
+    <button data-range="1d" aria-label="Show data for last day">1D</button>
+    <button data-range="1w" aria-label="Show data for last week">1W</button>
+    <button data-range="all" aria-label="Show all data">ALL</button>
+    <button id="resetZoom" aria-label="Reset zoom to full range">Reset Zoom</button>
+    <button id="exportCsv" arial-label="Export data as CSV">Export CSV</button>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">&copy; {{ year }} TechTrev | ESP32 + Flask + MQTT</div>
+
+</body>
+</html>

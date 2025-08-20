@@ -1,0 +1,122 @@
+/* Dashboard Color Variables */
+:root {
+  --bg-dark: #121212;
+  --card-dark: #1d1d1d;
+  --txt-main: #e5e5e5;
+  --temp: #de181b;
+  --hum: #2cb0ec;
+  --lux: #bfbf20;
+  --moist: #291ef5;
+  --grid-line: #242424;
+  --accept-rgb: 46, 204, 113
+}
+
+/* Base Styles */
+body {
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  background: var(--bg-dark);
+  color: var(--txt-main);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Header */
+header {
+  margin: 1.5rem 0;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  font-weight: 700;
+  background: linear-gradient(90deg, #2ecc71, #27ae60);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Summary Card Grid */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  width: min(1000px, 90%);
+  margin-bottom: 1rem;
+}
+
+/* Card Styling */
+.card {
+  background: var(--card-dark);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5),
+              0 8px 20px rbga(var(--accent-rgb, 46, 204, 113), 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  z-index: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+
+.card:hover {
+  transform: translateY(-12px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.card h4 {
+  margin: 0 0 0.25rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.value {
+  font-size: 1.1rem;
+  font-weight: 300;
+  white-space: pre-wrap;
+}
+
+/* Chart Container */
+.chart-wrap {
+  background: var(--card-dark);
+  width: min(1000px, 90%);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.45);
+  margin-bottom: 1rem;
+}
+
+/* Chart Controls */
+.chart-controls {
+  margin-bottom: 1.5rem;
+}
+
+.chart-controls button {
+  margin: 0 4px;
+  padding: 6px 10px;
+  background: var(--card-dark);
+  border: 1px solid #333;
+  color: var(--txt-main);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.chart-controls button:hover {
+  background: #333;
+}
+
+/* Sparkline charts inside cards */
+.spark {
+  height: 30px;
+  width: 100%;
+}
+
+/* Force chart height (optional) */
+canvas#sensorChart {
+  height: 430px !important;
+  width: 950px !important;
+}
+
+/* Footer */
+.footer {
+  font-size: 0.75rem;
+  margin-bottom: 1rem;
+  color: #8a8a8a;
+}

@@ -1,14 +1,7 @@
 {
-  "wifi": {
-    "ssid": "<SSID>",
-    "password": "<PASSWORD>"
-  },
-  "mqtt": {
-    "broker": "<BROKER_IP>",
-    "port": 1883
-  },
-  "sensors" : {
-    "poll_interval": 10000
-  }
-  
+  "sleep": 300,
+  "mqtt_broker": "<IP_ADDRESS>",
+  "mqtt_port": 1883,
+  "config_version": 1,
+  "updated_at": ""
 }
