@@ -9,7 +9,7 @@ venv/
 env/
 .env/
 ENV/
-*.env
+
 
 # Distribution / packaging
 build/
